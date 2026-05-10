@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ПЗФ Вінниччини — Інформаційна система природно-заповідного фонду</title>
+  <meta name="description" content="Інтерактивна інформаційна система природно-заповідного фонду Вінницької області станом на 01.01.2025">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+  <div class="loading" id="loading">
+    <div style="text-align:center">
+      <div class="spinner"></div>
+      <div style="margin-top:14px;color:var(--muted);font-size:13px">Завантаження даних…</div>
+    </div>
+  </div>
+
+  <div class="app">
+    <header>
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M12 2L4 6v6c0 4.5 3 8.5 8 10 5-1.5 8-5.5 8-10V6l-8-4z"/>
+          <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="title">
+        <h1>Природно-заповідний фонд Вінницької області</h1>
+        <small>Інформаційна система · станом на 01.01.2025</small>
+      </div>
+      <div class="header-stats">
+        <div class="h-stat"><span class="v" id="hs-objects">—</span><span class="l">обʼєктів</span></div>
+        <div class="h-stat"><span class="v" id="hs-area">—</span><span class="l">га</span></div>
+        <div class="h-stat"><span class="v">6</span><span class="l">районів</span></div>
+        <div class="h-stat"><span class="v">63</span><span class="l">ОТГ</span></div>
+      </div>
+    </header>
+
+    <main>
+      <button class="aside-toggle" id="aside-toggle" style="display:none">Фільтри</button>
+      <button class="layers-toggle" id="layers-toggle" style="display:none">Шари</button>
+      <button class="legend-toggle" id="legend-toggle" style="display:none">Легенда</button>
+      <aside>
+        <div class="filters">
+          <div class="field">
+            <label>Пошук за назвою</label>
+            <input id="q" type="text" placeholder="Наприклад, «Бронницький»…">
+          </div>
+          <div class="filter-row">
+            <div class="field">
+              <label>Район</label>
+              <select id="f-rayon"><option value="">Усі райони</option></select>
+            </div>
+            <div class="field">
+              <label>Громада (ОТГ)</label>
+              <select id="f-otg"><option value="">Усі громади</option></select>
+            </div>
+          </div>
+          <div class="filter-row">
+            <div class="field">
+              <label>Категорія</label>
+              <select id="f-cat"><option value="">Усі категорії</option></select>
+            </div>
+            <div class="field">
+              <label>Тип</label>
+              <select id="f-type"><option value="">Усі типи</option></select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Значення</label>
+            <div class="badges" id="sig-badges">
+              <button class="badge active" data-sig="">Усі</button>
+              <button class="badge" data-sig="загальнодержавне">Загальнодержавне</button>
+              <button class="badge" data-sig="місцеве">Місцеве</button>
+            </div>
+          </div>
+        </div>
+        <div class="results-bar">
+          <span><b id="result-count">0</b> з <b id="result-total">0</b> обʼєктів · <b id="result-area">0</b> га</span>
+          <button class="reset" id="reset">Скинути</button>
+        </div>
+        <div class="list" id="list"></div>
+      </aside>
+
+      <div class="map-wrap">
+        <div id="map"></div>
+
+        <div class="overlay-controls" id="overlay-controls">
+          <h4>Шари</h4>
+          <label class="toggle"><input type="checkbox" id="t-rayon" checked> Межі районів</label>
+          <label class="toggle"><input type="checkbox" id="t-otg"> Межі громад</label>
+          <label class="toggle"><input type="checkbox" id="t-pzf" checked> Обʼєкти ПЗФ</label>
+          <label class="toggle"><input type="checkbox" id="t-cluster" checked> Групування маркерів</label>
+        </div>
+
+        <div class="legend" id="legend">
+          <h4>Легенда (категорії)</h4>
+          <div id="legend-rows"></div>
+        </div>
+
+        <div class="detail" id="detail">
+          <header>
+            <button class="d-close" id="d-close" aria-label="Закрити">×</button>
+            <div class="d-cat" id="d-cat">—</div>
+            <div class="d-name" id="d-name">—</div>
+          </header>
+          <div class="detail-body" id="d-body"></div>
+        </div>
+
+        <button class="stats-btn" id="stats-open">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 14l3-3 4 4 5-7"/></svg>
+          Статистика
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-bg" id="modal-bg">
+    <div class="modal">
+      <header>
+        <h2>Аналітика природно-заповідного фонду</h2>
+        <button class="d-close" id="modal-close">×</button>
+      </header>
+      <div class="body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
